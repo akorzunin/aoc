@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/oleiade/reflections"
 )
 
 type FileScanner struct {
@@ -98,9 +100,9 @@ func parseGame(line string) *GameResult {
 }
 
 type GameRule = struct {
-	redNum   int
-	greenNum int
-	blueNum  int
+	RedNum   int
+	GreenNum int
+	BlueNum  int
 }
 type Pair[T, U any] struct {
 	First  T
@@ -120,11 +122,11 @@ func Zip[T, U any](ts []T, us []U) []Pair[T, U] {
 func getColorCount(gameRule GameRule, color Color) int {
 	switch color {
 	case Red:
-		return gameRule.redNum
+		return gameRule.RedNum
 	case Green:
-		return gameRule.greenNum
+		return gameRule.GreenNum
 	case Blue:
-		return gameRule.blueNum
+		return gameRule.BlueNum
 	}
 	panic("color not found")
 }
@@ -158,18 +160,56 @@ func sum(array []int) int {
 	}
 	return result
 }
+func getFieldName(color Color) string {
+	switch color {
+	case Red:
+		return "RedNum"
+	case Green:
+		return "GreenNum"
+	case Blue:
+		return "BlueNum"
+	}
+	panic("color not found")
+}
+func getPower(gameRule GameRule) int {
+	sum := 1
+	for _, fieldName := range [...]string{"RedNum", "GreenNum", "BlueNum"} {
+		value, _ := reflections.GetField(gameRule, fieldName)
+		sum *= value.(int)
+	}
+	return sum
+}
+func geGamePower(gameResult *GameResult) int {
+	rolls := [][]Balls{gameResult.redRolls, gameResult.greenRolls, gameResult.blueRolls}
+	colors := []Color{Red, Green, Blue}
+	sum := GameRule{}
+	for _, pair := range Zip(rolls, colors) {
+		colorRoll, color := pair.First, pair.Second
+		for _, roll := range colorRoll {
+			fieldName := getFieldName(color)
+			f, err := reflections.GetField(sum, fieldName)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if roll.count > f.(int) {
+				_ = reflections.SetField(&sum, fieldName, roll.count)
+			}
+		}
+	}
+	pow := getPower(sum)
+	fmt.Printf("GameId %d, %v, pow: %d\n", gameResult.gameId, sum, pow)
+	return pow
 
+}
 func main() {
 	s := Read("./in.txt")
 	defer s.Close()
-	gameRule := GameRule{redNum: 12, greenNum: 13, blueNum: 14}
 	var validGameIds []GameId
 	for s.Scan() {
 		line := s.Text()
 		gameData := parseGame(line)
-		if checkGameRule(gameData, gameRule) {
-			validGameIds = append(validGameIds, gameData.gameId)
-		}
+		power := geGamePower(gameData)
+		validGameIds = append(validGameIds, power)
 	}
 	res := sum(validGameIds)
 	fmt.Printf("%+v\n", res)
