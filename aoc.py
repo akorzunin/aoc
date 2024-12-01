@@ -5,7 +5,7 @@ from pathlib import Path
 
 TOKEN = os.getenv(
     "TOKEN",
-    open(Path(os.getcwd()).parents[0] / ".env", "r").read().strip(),
+    open(Path(os.getcwd()) / ".env", "r").read().strip(),
 )
 # Parse the command-line arguments
 parser = argparse.ArgumentParser(description="Download Advent of Code data")
@@ -31,7 +31,8 @@ if __name__ == "__main__":
     res = subprocess.run(
         [
             "curl",
-            f"https://adventofcode.com/2023/day/{day}/input",
+            f"https://adventofcode.com/{year}/day/{day}/input",
+            "-s",
             "--cookie",
             f"session={TOKEN}",
             "-o",
