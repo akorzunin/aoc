@@ -43,9 +43,15 @@ func main() {
 	slices.Sort(left_arr)
 	slices.Sort(right_arr)
 	var sum int
-	for i := 0; i < len(left_arr); i++ {
-		diff := abs(left_arr[i] - right_arr[i])
-		sum += diff
+	for _, item := range left_arr {
+		score := 0
+		for _, right_item := range right_arr {
+			if item == right_item {
+				score++
+			}
+		}
+		sim_score := score * item
+		sum += sim_score
 	}
 
 	fmt.Println(sum)
