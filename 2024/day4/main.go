@@ -27,34 +27,53 @@ func main() {
 		arr_2d = append(arr_2d, arr)
 	}
 	sum := 0
-	for _, line := range arr_2d {
-		sum += findXmas(line)
+	// itrate slices 3x3
+	for i := 0; i < len(arr_2d)-2; i++ {
+		for j := 0; j < len(arr_2d[i])-2; j++ {
+			a := [][]string{
+				arr_2d[i][j : j+3],
+				arr_2d[i+1][j : j+3],
+				arr_2d[i+2][j : j+3],
+			}
+			sum += findX_mas(a)
+		}
 	}
-	arr_2d_transposed := transpose(arr_2d)
-	for _, line := range arr_2d_transposed {
-		sum += findXmas(line)
-	}
-	arr_2d_diagonalized_left := diagonalize(arr_2d, true)
-	for _, line := range arr_2d_diagonalized_left {
-		sum += findXmas(line)
-	}
-	arr_2d_diagonalized_right := diagonalize(arr_2d, false)
-	for _, line := range arr_2d_diagonalized_right {
-		sum += findXmas(line)
-	}
+
 	fmt.Println(sum)
 }
 
 func findXmas(arr []string) int {
+	word := "MAS"
 	result := 0
 	s := strings.Join(arr, "")
-	splits := strings.Split(s, "XMAS")
+	splits := strings.Split(s, word)
 	result += len(splits) - 1
 	slices.Reverse(arr)
 	rs := strings.Join(arr, "")
-	splits = strings.Split(rs, "XMAS")
+	splits = strings.Split(rs, word)
 	result += len(splits) - 1
 	return result
+}
+
+func findX_mas(arr [][]string) int {
+	// accept window 3x3
+	if len(arr) != 3 || len(arr[0]) != 3 {
+		panic("invalid window size")
+	}
+	arr_left := diagonalize(arr, true)
+	is_mas_left := 0
+	for _, line := range arr_left {
+		is_mas_left += findXmas(line)
+	}
+	arr_right := diagonalize(arr, false)
+	is_mas_right := 0
+	for _, line := range arr_right {
+		is_mas_right += findXmas(line)
+	}
+	if (is_mas_left + is_mas_right) == 2 {
+		return 1
+	}
+	return 0
 }
 
 func transpose(slice [][]string) [][]string {
