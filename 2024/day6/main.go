@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"slices"
 )
 
 type Point struct {
@@ -32,13 +33,14 @@ func main() {
 
 	var grid [][]rune
 	var guard Guard
+	directions := []rune("^>v<")
 
 	scanner := bufio.NewScanner(file)
 	for y := 0; scanner.Scan(); y++ {
 		line := scanner.Text()
 		row := []rune(line)
 		for x, ch := range row {
-			if ch == '^' || ch == 'v' || ch == '<' || ch == '>' {
+			if slices.Contains(directions, ch) {
 				guard = Guard{Point{x, y}, dirFromChar(ch), string(ch)}
 				row[x] = '.'
 			}
@@ -46,57 +48,52 @@ func main() {
 		grid = append(grid, row)
 	}
 
-	visited := make(map[Point]bool)
-	states := make(map[State]bool)
-	visited[guard.pos] = true
+	loopCount := 0
+	for y := range grid {
+		for x := range grid[y] {
+			if grid[y][x] == '.' && (Point{x, y} != guard.pos) {
+				if causesLoop(grid, guard, Point{x, y}) {
+					loopCount++
+				}
+			}
+		}
+	}
+	fmt.Println(loopCount)
+}
 
-	// prindGeridWithGuard(grid, guard, visited)
+func causesLoop(grid [][]rune, initialGuard Guard, obstacle Point) bool {
+	newGrid := make([][]rune, len(grid))
+	for i := range grid {
+		newGrid[i] = make([]rune, len(grid[i]))
+		copy(newGrid[i], grid[i])
+	}
+	newGrid[obstacle.y][obstacle.x] = '#'
+
+	guard := initialGuard
+	visited := make(map[State]bool)
+
 	for {
-		if !isInGrid(guard.pos, grid) {
-			break
+		if !isInGrid(guard.pos, newGrid) {
+			return false
 		}
 
 		state := State{guard.pos, guard.facing}
-		if states[state] {
-			break // We've been here before with the same direction, so we're in a loop
+		if visited[state] {
+			return true
 		}
-		states[state] = true
+		visited[state] = true
 
 		next := Point{guard.pos.x + guard.dir.x, guard.pos.y + guard.dir.y}
-		if !isInGrid(next, grid) {
-			break
-		} else if grid[next.y][next.x] == '#' {
+		if !isInGrid(next, newGrid) {
+			return false
+		} else if newGrid[next.y][next.x] == '#' {
 			guard.turnRight()
 		} else {
 			guard.move()
-			visited[guard.pos] = true
 		}
-		// prindGeridWithGuard(grid, guard, visited)
 	}
-
-	fmt.Println(len(visited))
 }
 
-func isVisited(p Point, visited map[Point]bool) bool {
-	_, exists := visited[p]
-	return exists
-}
-
-func prindGeridWithGuard(grid [][]rune, guard Guard, visited map[Point]bool) {
-	for y, line := range grid {
-		for x, ch := range line {
-			if guard.pos.x == x && guard.pos.y == y {
-				fmt.Printf("%s", guard.facing)
-			} else if isVisited(Point{x, y}, visited) {
-				fmt.Printf("X")
-			} else {
-				fmt.Printf("%c", ch)
-			}
-		}
-		fmt.Println()
-	}
-	fmt.Println()
-}
 func isInGrid(p Point, grid [][]rune) bool {
 	return p.y >= 0 && p.y < len(grid) && p.x >= 0 && p.x < len(grid[0])
 }
