@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import datetime
 import os
 import subprocess
@@ -24,12 +25,25 @@ parser.add_argument(
     help="The day for which to download the data",
     default=datetime.datetime.now().day,
 )
+
+
+def get_default_outfile():
+    p = (
+        Path(os.getcwd())
+        / str(datetime.datetime.now().year)
+        / f"day{parser.parse_args().day}"
+    )
+
+    p.mkdir(parents=True, exist_ok=True)
+    return p / "in.txt"
+
+
 parser.add_argument(
     "-o",
     "--out",
     type=str,
     help="The output file to write the data to",
-    default="in.txt",
+    default=get_default_outfile(),
 )
 args = parser.parse_args()
 
